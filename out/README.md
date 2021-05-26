@@ -29,6 +29,7 @@ I'll just believe 2.45.
 ## 16 32 64
 
 ![M](gp/pic/M.png)
+
 M grows with lattice size...
 
 ![Chi](gp/pic/Chi.png)
