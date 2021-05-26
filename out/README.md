@@ -30,15 +30,15 @@ I'll just believe 2.45.
 
 ![M](gp/pic/M.png)
 
-M grows with lattice size...
+M-Tc grows with lattice size...
 
 ![Chi](gp/pic/Chi.png)
 
-Chi grows with lattice size...
+Chi-Tc grows with lattice size...
 
 ![Cv](gp/pic/Cv.png)
 
-While Cv doesn't, it shows us the cluster effect.
+While Cv-Tc doesn't, it shows us the cluster effect.
 
 *The system tends to form into large clusters of predominantly up- or down-pointing spins as it approaches the critical temperature from above. These clusters contribute significantly to both the magnetization and the energy of the system, so that, as they flip from one orientation to another, they produce large fluctuations in m and E, often called critical fluctuations.*
 
