@@ -1,0 +1,44 @@
+set grid
+
+# M
+plot '16' using 2:1 w l, \
+     '32' using 2:1 w l, \
+     '64' using 2:1 w l
+
+# Chi
+plot '16' using 2:3 w l, \
+     '32' using 2:3 w l, \
+     '64' using 2:3 w l
+
+# Cv
+plot '16' using 2:4 w l, \
+     '32' using 2:4 w l, \
+     '64' using 2:4 w l
+
+# bn-Chi
+plot 'bn' using 2:3 w l, \
+     '64' using 2:3 w l
+
+# bw-Chi
+plot 'bw' using 2:3 w l, \
+     '64' using 2:3 w l
+
+# bn-M
+plot 'bn' using 2:1 w l, \
+     '64' using 2:1 w l
+
+# bw-M
+plot 'bw' using 2:1 w l, \
+     '64' using 2:1 w l
+
+# dl-M
+plot 'dl' using 2:1 w l, \
+     '64' using 2:1 w l
+
+# M-Chi
+set xtics nomirror
+set ytics nomirror
+set y2tics
+plot 'bn' using 2:1 w l axes x1y1, \
+     'bn' using 2:3 w l axes x1y2
+

@@ -12,6 +12,10 @@
 #include <thread>
 #include <mutex>
 
+// compatablility
+#include <inttypes.h>
+typedef int64_t __int64;
+
 class MicroStates
 {
 	int* array; int x, y;
@@ -23,6 +27,7 @@ public:
 	int& at(const int& i, const int& j) const;
 	void flip(const int& i, const int& j);
 	int M();
+	int E();
 	void show() const;
 	void show(const int& i) const;
 	void show(const std::string& s) const;
@@ -35,7 +40,7 @@ protected:
 };
 
 int n, steps = 0; // size and thermalization steps
-float tb, te, ts; // temperature begin/end/step
+double tb, te, ts; // temperature begin/end/step
 
 std::mutex mtx_report; // mutex on report vector
 
@@ -50,15 +55,15 @@ void worker(const int i, const MicroStates& init, std::vector<int>& report)
 		* (static_cast<unsigned int>(i) + 2));
 	std::uniform_int_distribution<int> uid(0, n - 1);
 	auto rand_axis = bind(uid, generator);
-	std::uniform_real_distribution<float> urd(0.0, 1.0);
+	std::uniform_real_distribution<double> urd(0.0, 1.0);
 	auto rand_real = bind(urd, generator);
 
 	std::vector<int> local_report;
 	local_report.reserve(static_cast<size_t>((te - tb) / ts) * 2 + 2);
 	int M = local_state.M();
-	//int E = local_state.E(); TODO
+	int E = local_state.E();
 
-	for (float t = tb; t <= te; t += ts) {
+	for (double t = tb; t <= te; t += ts) {
 		for (int step = 0; step != steps; ++step)
 		{
 			int x = rand_axis();
@@ -68,19 +73,22 @@ void worker(const int i, const MicroStates& init, std::vector<int>& report)
 				if (local_state.at(x, y) == -1) M += 2;
 				else M -= 2;
 				local_state.flip(x, y);
+				E += dE;
 			}
 			else {
-				float p = exp(-dE / t);
-				float r = rand_real();
+				double p = exp(-dE / t);
+				double r = rand_real();
 				if (r <= p) { // trace and flip
 					if (local_state.at(x, y) == -1) M += 2;
 					else M -= 2;
 					local_state.flip(x, y);
+					E += dE;
 				}
 			}
 			//local_state.show(M);
 		}
 		local_report.push_back(M);
+		local_report.push_back(E);
 		//local_state.show(M);
 	}
 
@@ -92,7 +100,6 @@ void worker(const int i, const MicroStates& init, std::vector<int>& report)
 
 int main()
 {
-	std::cout << "Ising started." << std::endl;
 	// define rand_spin()
 	std::default_random_engine generator;
 	generator.seed(static_cast<unsigned int>(time(nullptr)));
@@ -105,7 +112,7 @@ int main()
 	std::cin >> n;
 	MicroStates init(n, n);
 	int orthered_init = 0;
-	std::cout << "0: orthered; others: disordered." << std::endl;
+	std::cout << "0: ordered; others: disordered." << std::endl;
 	std::cin >> orthered_init;
 	if (orthered_init == 0)
 		for (int i = 0; i != n; ++i)
@@ -131,6 +138,7 @@ int main()
 	int w; std::cin >> w;
 	std::vector<std::vector<int>> reports; reports.reserve(w);
 	std::vector<std::thread> works; std::vector<int> empty_report;
+	auto elapse = time(nullptr);
 	for (int i = 0; i != w; ++i) {
 		reports.push_back(empty_report);
 		// i changes fast, captures by copy.
@@ -139,17 +147,101 @@ int main()
 	// wait for all works
 	for (auto& t : works)
 		t.join();
+	elapse = time(nullptr) - elapse;
+	std::cout << "Done, time elapsed: " << elapse << "s." << std::endl;
 
-	// Mavg
 	auto rz = reports[0].size();
-	for (int i = 0; i != rz; ++i) {
-		float Mavg = 0.0;
+	
+	// Mavg
+	std::vector<double> M1; M1.reserve(rz/2);
+	std::cout << "====Mavg====" << std::endl;
+	for (int i = 0; i < rz; i+=2) {
+		double Mavg = 0.0;
 		for (int j = 0; j != w; ++j) {
-			Mavg += reports[j][i];
+			Mavg += static_cast<double>(reports[j][i]) /
+					static_cast<double>(n) /
+					static_cast<double>(n);
 		}
 		Mavg /= w;
 		std::cout << Mavg << ' ';
+		M1.push_back(Mavg);
 	}
+	std::cout << std::endl;
+	
+	// M2avg
+	std::vector<double> M2; M2.reserve(rz/2);
+	std::cout << "====M2avg====" << std::endl;
+	for (int i = 0; i < rz; i+=2) {
+		double M2avg = 0.0, tmp;
+		for (int j = 0; j != w; ++j) {
+			tmp = static_cast<double>(reports[j][i]) /
+				  static_cast<double>(n) /
+				  static_cast<double>(n);
+			M2avg += tmp*tmp;
+		}
+		M2avg /= w;
+		std::cout << M2avg << ' ';
+		M2.push_back(M2avg);
+	}
+	std::cout << std::endl;
+	
+	// Eavg
+	std::vector<double> E1; E1.reserve(rz/2);
+	std::cout << "====Eavg====" << std::endl;
+	for (int i = 1; i < rz; i+=2) {
+		double Eavg = 0.0;
+		for (int j = 0; j != w; ++j) {
+			Eavg += reports[j][i];
+		}
+		Eavg /= w;
+		std::cout << Eavg << ' ';
+		E1.push_back(Eavg);
+	}
+	std::cout << std::endl;
+	
+	// E2avg
+	std::vector<double> E2; E2.reserve(rz/2);
+	std::cout << "====E2avg====" << std::endl;
+	for (int i = 1; i < rz; i+=2) {
+		double E2avg = 0.0;
+		for (int j = 0; j != w; ++j) {
+			E2avg += reports[j][i] * reports[j][i];
+		}
+		E2avg /= w;
+		std::cout << E2avg << ' ';
+		E2.push_back(E2avg);
+	}
+	std::cout << std::endl;
+	
+	// beta
+	std::vector<double> beta; beta.reserve(rz/2);
+	std::cout << "====T====" << std::endl;
+	for (double t = tb; t <= te; t += ts) {
+		std::cout << t << " ";
+		beta.push_back(1.0/t);
+	}
+	std::cout << std::endl;
+	std::cout << "====beta====" << std::endl;
+	for (auto& i : beta)
+		std::cout << i << " ";
+	std::cout << std::endl;
+	
+	// Chi
+	std::vector<double> Chi; Chi.reserve(rz/2);
+	for (int i = 0; i != rz/2; ++i)
+		Chi.push_back(beta[i] * n * n * (M2[i] - M1[i] * M1[i]));
+	std::cout << "====Chi====" << std::endl;
+	for (auto& i : Chi)
+		std::cout << i << " ";
+	std::cout << std::endl;
+	
+	// Cv
+	std::vector<double> Cv; Cv.reserve(rz/2);
+	for (int i = 0; i != rz/2; ++i)
+		Cv.push_back(beta[i] * beta[i] * (E2[i] - E1[i] * E1[i]) / n / n);
+	std::cout << "====Cv====" << std::endl;
+	for (auto& i : Cv)
+		std::cout << i << " ";
 	std::cout << std::endl;
 
 	return 0;
@@ -172,11 +264,14 @@ inline MicroStates::MicroStates(const MicroStates& other) {
 
 inline MicroStates::~MicroStates() { delete[] array; }
 
-inline int& MicroStates::at(const int& i, const int& j) { return array[index(i, j)]; }
+inline int& MicroStates::at(const int& i, const int& j)
+{ return array[index(i, j)]; }
 
-inline int& MicroStates::at(const int& i, const int& j) const { return array[index(i, j)]; }
+inline int& MicroStates::at(const int& i, const int& j) const
+{ return array[index(i, j)]; }
 
-inline void MicroStates::flip(const int& i, const int& j) { this->at(i, j) *= -1; }
+inline void MicroStates::flip(const int& i, const int& j)
+{ this->at(i, j) *= -1; }
 
 inline int MicroStates::M() {
 	int ret = 0;
@@ -184,6 +279,17 @@ inline int MicroStates::M() {
 		for (int j = 0; j != y; ++j)
 			ret += this->at(i, j);
 	return ret;
+}
+
+inline int MicroStates::E() {
+	int ret = 0;
+	for (int i = 0; i != x; ++i)
+		for (int j = 0; j != y; ++j)
+			ret -= (this->at_edge(i + 1, j) +
+					this->at_edge(i - 1, j) +
+					this->at_edge(i, j + 1) +
+					this->at_edge(i, j - 1)  ) * this->at(i, j);
+	return ret / 2;
 }
 
 inline void MicroStates::show() const {
@@ -215,9 +321,11 @@ inline int MicroStates::EnergyChange(const int& i, const int& j) const {
 	return ret;
 }
 
-inline int& MicroStates::at_edge(const int& i, const int& j) const { return array[index((i + x) % x, (j + y) % y)]; }
+inline int& MicroStates::at_edge(const int& i, const int& j) const
+{ return array[index((i + x) % x, (j + y) % y)]; }
 
-inline int MicroStates::index(const int& i, const int& j) const { return x * i + j; }
+inline int MicroStates::index(const int& i, const int& j) const
+{ return x * i + j; }
 
 inline void MicroStates::show_() const {
 	for (int i = 0; i != x; ++i) {

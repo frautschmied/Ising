@@ -1,0 +1,17 @@
+1024	row
+T	21
+M	13
+Chi	25
+Cv	27
+
+sed -n -e 27p -e 25p -e 13p -e 21p INFILE | rs -Tz > OUTFILE
+
+sed -n -e 27p -e 25p -e 13p -e 21p 16.txt | rs -Tz > gp/16
+sed -n -e 27p -e 25p -e 13p -e 21p 32.txt | rs -Tz > gp/32
+sed -n -e 27p -e 25p -e 13p -e 21p 64.txt | rs -Tz > gp/64
+
+sed -n -e 27p -e 25p -e 13p -e 21p big_n.txt | rs -Tz > gp/bn
+sed -n -e 27p -e 25p -e 13p -e 21p big_w.txt | rs -Tz > gp/bw
+
+sed -n -e 27p -e 25p -e 13p -e 21p disorder_low_t.txt | rs -Tz > gp/dl
+
