@@ -13,8 +13,10 @@
 #include <mutex>
 
 // compatablility
+#ifndef _WIN32
 #include <inttypes.h>
 typedef int64_t __int64;
+#endif // _WIN32
 
 class MicroStates
 {
@@ -205,7 +207,7 @@ int main()
 	for (int i = 1; i < rz; i+=2) {
 		double E2avg = 0.0;
 		for (int j = 0; j != w; ++j) {
-			E2avg += reports[j][i] * reports[j][i];
+			E2avg += static_cast<unsigned __int64>(reports[j][i]) * reports[j][i];
 		}
 		E2avg /= w;
 		std::cout << E2avg << ' ';
