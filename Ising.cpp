@@ -43,6 +43,7 @@ protected:
 
 int n, steps = 0; // size and thermalization steps
 double tb, te, ts; // temperature begin/end/step
+double B; // magnetic field
 
 std::mutex mtx_report; // mutex on report vector
 
@@ -128,6 +129,10 @@ int main()
 	// set temperature begin/end/step
 	std::cout << "Temperature begin/end/step?" << std::endl;
 	std::cin >> tb >> te >> ts;
+
+	// set magnetic field
+	std::cout << "Magnetic field?" << std::endl;
+	std::cin >> B;
 
 	//set steps
 	while (steps < 1) {
@@ -291,7 +296,7 @@ inline int MicroStates::E() {
 					this->at_edge(i - 1, j) +
 					this->at_edge(i, j + 1) +
 					this->at_edge(i, j - 1)  ) * this->at(i, j);
-	return ret / 2;
+	return (ret / 2) - (B * this->M());
 }
 
 inline void MicroStates::show() const {
@@ -320,6 +325,7 @@ inline int MicroStates::EnergyChange(const int& i, const int& j) const {
 		this->at_edge(i, j + 1) +
 		this->at_edge(i, j - 1);
 	ret *= this->at(i, j) * 2;
+	ret += this->at(i, j) * B * 2;
 	return ret;
 }
 
